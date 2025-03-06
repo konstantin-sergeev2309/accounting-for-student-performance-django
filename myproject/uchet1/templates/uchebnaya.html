@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учебная часть</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.secondary {
+            background-color: #28a745;
+        }
+        .button.secondary:hover {
+            background-color: #218838;
+        }
+        .button.yellow {
+            background-color: #ffc107;
+            color: black;
+        }
+        .button.yellow:hover {
+            background-color: #e0a800;
+        }
+        .button.dark {
+            background-color: #343a40;  /* Темный цвет для кнопки администрирования */
+        }
+        .button.dark:hover {
+            background-color: #23272b;
+        }
+        .logout-button {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+        #reportOptions {
+            display: none;
+            margin-top: 10px;
+        }
+        #reportOptions .button {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Учебная часть</h2>
+
+    <!-- Кнопка для перехода к выставлению оценок -->
+    <a href="{% url 'prepodovat' %}" class="button">Перейти к выставлению оценок</a>
+
+    <a href="{% url 'itogi' %}" class="button">Перейти к итоговым оценкам</a>
+
+    <!-- Кнопка для формирования отчетов -->
+    <button class="button secondary" onclick="showReportOptions()">Формирование отчетов</button>
+
+    <!-- Скрытый блок с опциями отчетов -->
+    <div id="reportOptions">
+        <button class="button yellow" onclick="window.location.href='{% url 'dopusk_report' %}'">Отчет по допускам к экзамену</button>
+        <button class="button yellow" onclick="window.location.href='{% url 'uspevaemost_report' %}'">Анализ успеваемости</button>
+        <button class="button yellow" onclick="window.location.href='{% url 'zadolzhennosti_report' %}'">Задолженности студентов</button>
+    </div>
+
+    <!-- Кнопка для администрирования -->
+    <a href="{% url 'administ' %}" class="button dark">Администрирование</a>
+
+    <!-- Кнопка выхода -->
+    <button class="button logout-button" onclick="window.location.href='{% url 'logout' %}'">Выйти</button>
+</div>
+
+<script>
+    function showReportOptions() {
+        // Показываем блок с опциями отчетов
+        document.getElementById('reportOptions').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

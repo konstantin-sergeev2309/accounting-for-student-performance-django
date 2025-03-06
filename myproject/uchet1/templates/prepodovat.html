@@ -1,0 +1,202 @@
+{% load custom_filters %}  <!-- Подключаем фильтр -->
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Преподаватель</title>
+    <!-- Подключение FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: center; }
+        .container { width: 90%; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #007bff; color: white; }
+        input[type="number"], input[type="date"] { padding: 5px; border-radius: 5px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button[type="submit"] { background: #28a745; color: white; }
+        button[type="button"] { background: #6c757d; color: white; }
+        .exit-button { background: #777777; color: white; }
+        .logout-button { background: #dc3545; color: white; }
+        .edit-icon { cursor: pointer; color: #ffc107; margin-left: 10px; font-size: 16px; }
+        .edit-icon:hover { color: #e0a800; }
+        .semester-info { font-weight: bold; margin-bottom: 20px; }
+        .semester-select { margin-bottom: 20px; }
+        .common-date { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Выставление оценок</h2>
+
+    <div style="display: flex; flex-direction: row;  justify-content: space-between;">
+        <!-- Скрытая кнопка перехода назад -->
+        {% if request.user.role == 'uchebnaya_chast'%}
+        <div style="text-align: left; margin-bottom: 20px;">
+            <button class="exit-button" onclick="window.location.href='{% url 'uchebnaya' %}'">На главную</button>
+        </div>
+        {% endif %}
+
+        <!-- Кнопка выхода -->
+        <div style="text-align: right; margin-bottom: 20px;">
+            <button class="logout-button" onclick="window.location.href='{% url 'logout' %}'">Выйти</button>
+        </div>
+    </div>
+
+    <!-- Отображение текущего и предыдущего семестра -->
+    {% if selected_group %}
+        <div class="semester-info">
+            Текущий семестр для группы: {{ current_semester }}
+        </div>
+    {% endif %}
+
+    <!-- Форма выбора группы -->
+    <form method="GET">
+        <label for="group">Выберите группу:</label>
+        <select name="group" id="group" onchange="this.form.submit()">
+            <option value="">-- Выберите группу --</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}" {% if selected_group == group.id|stringformat:"s" %}selected{% endif %}>{{ group.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if selected_group %}
+    <!-- Форма выбора предмета -->
+    <form method="GET">
+        <input type="hidden" name="group" value="{{ selected_group }}">
+        <label for="predmet">Выберите предмет:</label>
+        <select name="predmet" id="predmet" onchange="this.form.submit()">
+            <option value="">-- Выберите предмет --</option>
+            {% for predmet in predmets %}
+                <option value="{{ predmet.id }}" {% if selected_predmet == predmet.id|stringformat:"s" %}selected{% endif %}>{{ predmet.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+{% endif %}
+    {% if selected_predmet %}
+    <!-- Форма выбора семестра -->
+    <div class="semester-select">
+        <form method="GET">
+            <input type="hidden" name="group" value="{{ selected_group }}">
+            <input type="hidden" name="predmet" value="{{ selected_predmet }}">
+            <label for="semester">Выберите семестр:</label>
+            <select name="semester" id="semester" onchange="this.form.submit()">
+                {% for semester in available_semesters %}
+                    <option value="{{ semester }}" {% if selected_semester == semester %}selected{% endif %}>
+                        {% if semester == current_semester %}
+                            Текущий семестр ({{ semester }})
+                        {% elif semester > current_semester %}
+                            Следующий семестр ({{ semester }})
+                        {% else %}
+                            Предыдущий семестр ({{ semester }})
+                        {% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if selected_predmet %}
+    <!-- Форма для загрузки Excel-файла -->
+    <form method="POST" enctype="multipart/form-data" action="{% url 'import_grades' %}">
+        {% csrf_token %}
+        <input type="hidden" name="group" value="{{ selected_group }}">
+        <input type="hidden" name="predmet" value="{{ selected_predmet }}">
+        <input type="hidden" name="semester" value="{{ selected_semester }}">
+        <label for="excel_file">Загрузить оценки из Excel:</label>
+        <input type="file" name="excel_file" id="excel_file" accept=".xlsx" required>
+        <button type="submit" class="button">Импорт оценок</button>
+    </form>
+
+    <!-- Поле для выбора общей даты -->
+    <div class="common-date">
+        <label for="common-date">Общая дата для всех студентов:</label>
+        <input type="date" id="common-date" onchange="setCommonDate(this.value)">
+    </div>
+
+    <!-- Форма сохранения оценок -->
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="group" value="{{ selected_group }}">
+        <input type="hidden" name="predmet" value="{{ selected_predmet }}">
+        <input type="hidden" name="semester" value="{{ selected_semester }}">
+        <table>
+            <tr>
+                <th>ФИО</th>
+                {% for date in dates %}
+                    <th>{{ date|format_date:"%Y-%m-%d" }}</th>  <!-- Используем фильтр format_date -->
+                {% endfor %}
+                <th>Новая дата</th>
+                <th>Новая оценка</th>
+            </tr>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.name }}</td>
+                {% for date in dates %}
+                    <td>
+                        {% with grade_info=grades_history|get_item:student.id|get_item:date %}
+                            {% if grade_info %}
+                                {{ grade_info.score }}
+                                <i class="fas fa-pencil-alt edit-icon" onclick="editGrade({{ grade_info.id }})" title="Редактировать оценку"></i>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                {% endfor %}
+                <td>
+                    <input type="date" name="date_{{ student.id }}" class="student-date">
+                </td>
+                <td>
+                    <input type="number" name="score_{{ student.id }}" min="2" max="5" title="Оценка должна быть от 2 до 5">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <button type="submit">Сохранить оценки</button>
+        <button type="button" onclick="window.location.href='{% url 'prepodovat' %}'">Назад к выбору группы</button>
+    </form>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для редактирования оценки -->
+<div id="editModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);">
+    <h3>Редактировать оценку</h3>
+    <form id="editForm" method="POST" action="">
+        {% csrf_token %}
+        <input type="hidden" name="group" value="{{ selected_group }}">
+        <input type="hidden" name="predmet" value="{{ selected_predmet }}">
+        <input type="hidden" name="semester" value="{{ selected_semester }}">
+        <input type="number" id="editScore" name="score" min="2" max="5" required>
+        <button type="submit">Сохранить</button>
+        <button type="button" onclick="closeModal()">Отмена</button>
+    </form>
+</div>
+
+<script>
+    function editGrade(paId) {
+        // Открываем модальное окно
+        document.getElementById('editModal').style.display = 'block';
+        // Устанавливаем action формы редактирования
+        document.getElementById('editForm').action = `/edit-grade/${paId}/`;
+    }
+
+    function closeModal() {
+        // Закрываем модальное окно
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    // Функция для установки общей даты
+    function setCommonDate(date) {
+        const dateInputs = document.querySelectorAll('.student-date');
+        dateInputs.forEach(input => {
+            input.value = date;
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Итоговые оценки</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 1000px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .logout-button {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .report-table th {
+            background-color: #007bff;
+            color: white;
+        }
+        .exit-button { background: #777777; color: white; }
+        .period-label {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div style="text-align: left; margin-bottom: 20px;">
+    <button style="margin: 5px; padding: 10px 20px; border-radius: 5px; cursor: pointer;" class="exit-button" onclick="window.location.href='{% url 'uchebnaya' %}'">На главную</button>
+</div>
+
+<div class="container">
+    <h2>Итоговые оценки студентов</h2>
+
+    <!-- Форма выбора группы -->
+    <form method="GET">
+        <label for="group">Выберите группу:</label>
+        <select name="group" id="group" onchange="this.form.submit()">
+            <option value="">-- Выберите группу --</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}" {% if selected_group == group.id|stringformat:"s" %}selected{% endif %}>{{ group.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if selected_group %}
+    <!-- Форма выбора семестра -->
+    <form method="GET">
+        <input type="hidden" name="group" value="{{ selected_group }}">
+        <label for="semester">Выберите период:</label>
+        <select name="semester" id="semester" onchange="this.form.submit()">
+            <option value="">-- Выберите период --</option>
+            {% for semester in available_semesters %}
+                <option value="{{ semester }}" {% if selected_semester == semester|stringformat:"s" %}selected{% endif %}>
+                    {% if semester == current_semester %}
+                        Текущий семестр ({{ semester }})
+                    {% elif semester > current_semester %}
+                        Следующий семестр ({{ semester }})
+                    {% else %}
+                        Предыдущий семестр ({{ semester }})
+                    {% endif %}
+                </option>
+            {% endfor %}
+            <option value="year" {% if selected_semester == "year" %}selected{% endif %}>Итоги за год</option>
+        </select>
+    </form>
+    {% endif %}
+
+    {% if period_label %}
+    <!-- Надпись с периодом -->
+    <div class="period-label">{{ period_label }}</div>
+    {% endif %}
+
+    {% if students_data %}
+    <!-- Таблица с итоговыми оценками -->
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>ФИО студента</th>
+                {% for subject in subjects %}
+                    <th>{{ subject }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for student, grades in students_data.items %}
+                <tr>
+                    <td>{{ student }}</td>
+                    {% for subject in subjects %}
+                        <td>{{ grades|get_item:subject|default:"Нет данных" }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <!-- Кнопка выхода -->
+    <button class="button logout-button" onclick="window.location.href='{% url 'logout' %}'">Выйти</button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Задолженности студентов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.yellow {
+            background-color: #ffc107;
+            color: black;
+        }
+        .button.yellow:hover {
+            background-color: #e0a800;
+        }
+        .logout-button {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .report-table th {
+            background-color: #007bff;
+            color: white;
+        }
+        .no-debts {
+            color: green;
+            font-weight: bold;
+        }
+        .debts-list {
+            text-align: left;
+        }
+        .exit-button { background: #777777; color: white; }
+    </style>
+</head>
+<body>
+
+<div style="text-align: left; margin-bottom: 20px;">
+            <button style="margin: 5px; padding: 10px 20px; border-radius: 5px; cursor: pointer;" class="exit-button" onclick="window.location.href='{% url 'uchebnaya' %}'">На главную</button>
+        </div>
+
+<div class="container">
+    <h2>Задолженности студентов</h2>
+
+    <!-- Форма выбора группы -->
+    <form method="GET">
+        <label for="group">Выберите группу:</label>
+        <select name="group" id="group" onchange="this.form.submit()">
+            <option value="">-- Выберите группу --</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}" {% if selected_group == group.id|stringformat:"s" %}selected{% endif %}>{{ group.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if selected_group %}
+    <!-- Форма выбора предмета -->
+    <form method="GET">
+        <input type="hidden" name="group" value="{{ selected_group }}">
+        <label for="predmet">Выберите предмет:</label>
+        <select name="predmet" id="predmet" onchange="this.form.submit()">
+            <option value="">-- Все предметы --</option>
+            {% for predmet in predmets %}
+                {% if predmet.group.id|stringformat:"s" == selected_group %}
+                    <option value="{{ predmet.id }}" {% if selected_predmet == predmet.id|stringformat:"s" %}selected{% endif %}>{{ predmet.name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
+
+    {% if students_data %}
+    <!-- Таблица с задолженностями -->
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>ФИО студента</th>
+                <th>Задолженности</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students_data %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td class="debts-list">
+                    {% if not student.failing_dates and not student.missing_dates %}
+                        <span class="no-debts">Долгов нет</span>
+                    {% else %}
+                        <ul>
+                            {% if student.failing_dates %}
+                                <li><strong>Оценки "2":</strong>
+                                    <ul>
+                                        {% for date in student.failing_dates %}
+                                            <li>{{ date }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                            {% if student.missing_dates %}
+                                <li><strong>Отсутствующие оценки:</strong>
+                                    <ul>
+                                        {% for date in student.missing_dates %}
+                                            <li>{{ date }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Кнопка для формирования отчета в Excel -->
+    <a href="{% url 'generate_zadolzhennosti_excel' %}?{% if selected_predmet %}predmet={{ selected_predmet }}&{% endif %}group={{ selected_group }}" class="button yellow">
+        Сформировать отчет в Excel
+    </a>
+    {% endif %}
+
+    <!-- Кнопка выхода -->
+    <button class="button logout-button" onclick="window.location.href='{% url 'logout' %}'">Выйти</button>
+</div>
+
+</body>
+</html>
